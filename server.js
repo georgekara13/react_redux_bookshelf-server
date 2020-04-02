@@ -3,6 +3,7 @@ const bodyParser   = require('body-parser')
 const cookieParser = require('cookie-parser')
 const mongoose     = require('mongoose')
 const config       = require('./config/config').get(process.env.NODE_ENV)
+const { auth }     = require('./middleware/auth')
 
 mongoose.Promise = global.Promise
 mongoose.connect(config.DATABASE, { useMongoClient: true })
@@ -21,6 +22,20 @@ app.use(cookieParser())
 //routes
 
 //GET
+
+//Check if user is authenticated to access restricted routes
+//1. check user token with auth middleware(auth)
+//2. if token matches, user is authenticated to access restricted route
+app.get('/api/userisauth', auth, (req, res) => {
+  res.json({
+    isAuth: true,
+    id: req.user_id,
+    email: req.user.email,
+    name: req.user.name,
+    lastname: req.user.lastName
+  })
+})
+
 app.get('/api/getbookbyid', (req, res) => {
   let id = req.query.id
 
@@ -67,6 +82,24 @@ app.get('/api/getusers', (req, res) => {
     })
 
     res.status(200).send(userRes)
+  })
+})
+
+app.get('/api/userposts', (req, res) => {
+  Book.find({ownerId: req.query.user}).exec((err, doc) => {
+    if (err) return res.status(400).send(err)
+
+    res.send(doc)
+  })
+})
+
+//1. check token with auth middleware(auth)
+//2. if token matches, get user info from middleware(attached in the req)
+//3. destroy session by deleting user token
+app.get('/api/logout', auth, (req, res) => {
+  req.user.deleteToken(req.token, (err, user) => {
+    if(err) return res.status(400).send(err)
+    res.sendStatus(200)
   })
 })
 
