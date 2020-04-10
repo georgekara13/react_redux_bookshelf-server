@@ -29,7 +29,7 @@ app.use(cookieParser())
 app.get('/api/userisauth', auth, (req, res) => {
   res.json({
     isAuth: true,
-    id: req.user_id,
+    id: req.user._id,
     email: req.user.email,
     name: req.user.name,
     lastname: req.user.lastName
